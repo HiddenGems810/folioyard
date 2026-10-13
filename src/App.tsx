@@ -3,14 +3,15 @@ import type { PDFDocumentLoadingTask } from 'pdfjs-dist';
 import type { MergeResponse } from './merge-protocol';
 import type { PageOperationRequest, PageOperationResponse } from './page-operation-protocol';
 import type { PageOperation } from './page-operations';
+import { PDFCPU_MAX_INPUT_BYTES, type PdfCpuOperation, type PdfCpuResponse } from './pdfcpu-protocol';
 import { parsePageList } from './page-list';
 import SignaturePad from './SignaturePad';
 
 const PdfPreview = lazy(() => import('./PdfPreview'));
 
 type Source = { id: number; file: File; url?: string };
-type Tool = 'merge' | 'split' | 'extract' | 'reorder' | 'rotate' | 'delete' | 'images-to-pdf' | 'pdf-to-images' | 'watermark' | 'page-numbers' | 'annotate' | 'signature';
-type OutputPdf = { file: File; url: string; pageCount: number };
+type Tool = 'merge' | 'split' | 'extract' | 'reorder' | 'rotate' | 'delete' | 'images-to-pdf' | 'pdf-to-images' | 'watermark' | 'page-numbers' | 'annotate' | 'signature' | 'compress' | 'protect' | 'unlock';
+type OutputPdf = { file: File; url: string; pageCount: number; locked: boolean };
 type OutputImage = { file: File; url: string; pageNumber: number };
 type MergeState =
   | { kind: 'idle' }
@@ -30,6 +31,9 @@ const tools: Array<{ id: Tool; title: string; mark: string }> = [
   { id: 'page-numbers', title: 'Page numbers', mark: '#' },
   { id: 'annotate', title: 'Add a note', mark: 'N' },
   { id: 'signature', title: 'Visual signature', mark: '✎' },
+  { id: 'compress', title: 'Compress PDF', mark: '↓' },
+  { id: 'protect', title: 'Protect PDF', mark: '◇' },
+  { id: 'unlock', title: 'Unlock PDF', mark: '↗' },
 ];
 
 const descriptions: Record<Tool, string> = {
@@ -45,6 +49,9 @@ const descriptions: Record<Tool, string> = {
   'page-numbers': 'Add a centered page number to every page.',
   annotate: 'Add a short, visible note to selected pages.',
   signature: 'Place a drawn or typed visual signature on selected pages.',
+  compress: 'Reduce file size losslessly. A download is offered only when the PDF becomes smaller.',
+  protect: 'Encrypt a PDF with an AES-256 open password that stays on this device.',
+  unlock: 'Create an unprotected copy of a PDF using its open password.',
 };
 
 function formatBytes(bytes: number) {
@@ -71,6 +78,9 @@ export default function App() {
   const [watermarkText, setWatermarkText] = useState('DRAFT');
   const [annotationText, setAnnotationText] = useState('');
   const [signatureText, setSignatureText] = useState('');
+  const [protectPassword, setProtectPassword] = useState('');
+  const [confirmProtectPassword, setConfirmProtectPassword] = useState('');
+  const [unlockPassword, setUnlockPassword] = useState('');
   const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null);
   const [rotation, setRotation] = useState<90 | 180 | 270>(90);
   const [pageNumber, setPageNumber] = useState(1);
@@ -95,9 +105,10 @@ export default function App() {
   const currentSources = tool === 'images-to-pdf' ? imageSources : sources;
   const activeSource = currentSources.find((source) => source.id === activeSourceId) ?? null;
   previewState.current = { activeSourceId, showOutput, tool };
-  const previewFile = showOutput ? outputPdfs[activeOutputIndex]?.file ?? null : tool === 'images-to-pdf' ? null : activeSource?.file ?? null;
+  const selectedOutput = outputPdfs[activeOutputIndex] ?? null;
+  const previewFile = showOutput ? selectedOutput?.locked ? null : selectedOutput?.file ?? null : tool === 'images-to-pdf' ? null : activeSource?.file ?? null;
   const previewPages = showOutput
-    ? tool === 'pdf-to-images' ? outputImages.length : outputPdfs[activeOutputIndex]?.pageCount ?? 0
+    ? tool === 'pdf-to-images' ? outputImages.length : outputPdfs[activeOutputIndex]?.locked ? 0 : outputPdfs[activeOutputIndex]?.pageCount ?? 0
     : activeSource ? pageCounts[activeSource.id] ?? 0 : 0;
 
   const clearOutput = useCallback(() => {
@@ -108,6 +119,9 @@ export default function App() {
     setActiveOutputIndex(0);
     setShowOutput(false);
     setMergeState({ kind: 'idle' });
+    setProtectPassword('');
+    setConfirmProtectPassword('');
+    setUnlockPassword('');
     pagesMerged.current = 0;
   }, []);
 
@@ -176,6 +190,9 @@ export default function App() {
     setActiveSourceId(id);
     setShowOutput(false);
     setPageNumber(1);
+    setProtectPassword('');
+    setConfirmProtectPassword('');
+    setUnlockPassword('');
     if (tool === 'reorder' && pageCounts[id]) setPageList(Array.from({ length: pageCounts[id] }, (_, index) => index + 1).join(', '));
     setError(null);
     setNotice(null);
@@ -330,20 +347,28 @@ export default function App() {
     }
   }
 
-  async function verifyAndKeepOutputs(files: Array<{ name: string; bytes: ArrayBuffer; pageCount: number }>, runId: number) {
+  async function verifyAndKeepOutputs(
+    files: Array<{ name: string; bytes: ArrayBuffer; pageCount: number; locked?: boolean }>,
+    runId: number,
+    successMessage?: string,
+  ) {
     try {
-      const { getDocument } = await import('./pdfjs');
-      const validated: Array<{ file: File; pageCount: number }> = [];
+      const validated: Array<{ file: File; pageCount: number; locked: boolean }> = [];
       for (const output of files) {
         if (runId !== mergeRun.current) return;
         const file = new File([output.bytes], output.name, { type: 'application/pdf' });
+        if (output.locked) {
+          validated.push({ file, pageCount: output.pageCount, locked: true });
+          continue;
+        }
+        const { getDocument } = await import('./pdfjs');
         const task = getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
         verificationTask.current = task;
         try {
           const verified = await task.promise;
           if (runId !== mergeRun.current) return;
           if (verified.numPages !== output.pageCount) throw new Error(`“${output.name}” did not pass its page-count check.`);
-          validated.push({ file, pageCount: verified.numPages });
+          validated.push({ file, pageCount: verified.numPages, locked: false });
         } finally {
           if (verificationTask.current === task) {
             verificationTask.current = null;
@@ -352,7 +377,7 @@ export default function App() {
         }
       }
       if (runId !== mergeRun.current) return;
-      const created = validated.map(({ file, pageCount }) => ({ file, pageCount, url: URL.createObjectURL(file) }));
+      const created = validated.map(({ file, pageCount, locked }) => ({ file, pageCount, locked, url: URL.createObjectURL(file) }));
       outputUrls.current = created.map(({ url }) => url);
       setOutputPdfs(created);
       setOutputImages([]);
@@ -360,7 +385,7 @@ export default function App() {
       setShowOutput(true);
       setPageNumber(1);
       setMergeState({ kind: 'done', pageCount: created.reduce((sum, output) => sum + output.pageCount, 0), fileSize: created.reduce((sum, output) => sum + output.file.size, 0) });
-      setNotice(created.length > 1 ? `${created.length} PDFs checked and ready to download.` : 'PDF checked and ready to download.');
+      setNotice(successMessage ?? (created.length > 1 ? `${created.length} PDFs checked and ready to download.` : 'PDF checked and ready to download.'));
     } catch (verificationError) {
       if (runId !== mergeRun.current) return;
       setMergeState({ kind: 'idle' });
@@ -444,6 +469,97 @@ export default function App() {
       worker.current = null;
       setMergeState({ kind: 'idle' });
       setError('The file could not be prepared for processing. Your source is unchanged.');
+    }
+  }
+
+  function runPdfCpu(operation: PdfCpuOperation) {
+    if (!activeSource || mergeState.kind === 'running') return;
+    const source = activeSource;
+    const password = operation === 'encrypt' ? protectPassword : operation === 'decrypt' ? unlockPassword : '';
+    if (operation === 'encrypt') {
+      const passwordBytes = new TextEncoder().encode(password).length;
+      if (passwordBytes < 8 || passwordBytes > 127) {
+        setError('Use a password between 8 and 127 UTF-8 bytes.');
+        return;
+      }
+      if (password !== confirmProtectPassword) {
+        setError('The password entries do not match.');
+        return;
+      }
+    }
+    if (operation === 'decrypt' && !password) {
+      setError('Enter the PDF password to continue.');
+      return;
+    }
+
+    clearOutput();
+    setError(null);
+    setNotice(null);
+    const pageCount = pageCounts[source.id] ?? 0;
+    setMergeState({
+      kind: 'running',
+      completedFiles: 0,
+      totalFiles: 1,
+      fileName: operation === 'compress' ? 'Compressing PDF' : operation === 'encrypt' ? 'Protecting PDF' : 'Unlocking PDF',
+      pagesDone: pageCount,
+    });
+    const runId = ++mergeRun.current;
+    let currentWorker: Worker;
+    try {
+      currentWorker = new Worker(new URL('./pdfcpu.worker.ts', import.meta.url), { type: 'module' });
+    } catch {
+      setMergeState({ kind: 'idle' });
+      setError('PDF processing could not start. Reload this page and try again.');
+      return;
+    }
+    worker.current = currentWorker;
+    currentWorker.onmessage = (event: MessageEvent<PdfCpuResponse>) => {
+      if (runId !== mergeRun.current) return;
+      currentWorker.terminate();
+      if (worker.current === currentWorker) worker.current = null;
+      const message = event.data;
+      if (message.type === 'error') {
+        setMergeState({ kind: 'idle' });
+        setError(message.message);
+        return;
+      }
+      if (operation === 'compress' && message.bytes.byteLength >= source.file.size) {
+        setMergeState({ kind: 'idle' });
+        setNotice('Lossless optimization did not reduce the file size, so no download was created. Your original is unchanged.');
+        return;
+      }
+      const name = source.file.name.replace(/\.pdf$/i, '');
+      const suffix = operation === 'compress' ? 'compressed' : operation === 'encrypt' ? 'protected' : 'unlocked';
+      const successMessage = operation === 'compress'
+        ? `Reduced from ${formatBytes(source.file.size)} to ${formatBytes(message.bytes.byteLength)}${Math.round((1 - message.bytes.byteLength / source.file.size) * 100) > 0 ? ` (${Math.round((1 - message.bytes.byteLength / source.file.size) * 100)}%)` : ''}. Lossless; image quality is unchanged.`
+        : operation === 'encrypt'
+          ? 'Protected with AES-256. Save the password; Folioyard does not retain it.'
+          : 'The unlocked PDF passed validation and is ready to download.';
+      setMergeState({ kind: 'running', completedFiles: 1, totalFiles: 1, fileName: 'Checking the processed PDF', pagesDone: message.pageCount });
+      void verifyAndKeepOutputs([{
+        name: `${name}-${suffix}.pdf`,
+        bytes: message.bytes,
+        pageCount: message.pageCount,
+        locked: operation === 'encrypt',
+      }], runId, successMessage);
+    };
+    currentWorker.onerror = () => {
+      if (runId !== mergeRun.current) return;
+      currentWorker.terminate();
+      if (worker.current === currentWorker) worker.current = null;
+      setMergeState({ kind: 'idle' });
+      setError('PDF processing stopped unexpectedly. Your source file is unchanged.');
+    };
+    try {
+      currentWorker.postMessage({ file: source.file, operation, password });
+      setProtectPassword('');
+      setConfirmProtectPassword('');
+      setUnlockPassword('');
+    } catch {
+      currentWorker.terminate();
+      if (worker.current === currentWorker) worker.current = null;
+      setMergeState({ kind: 'idle' });
+      setError('The PDF could not be prepared for processing. Your source file is unchanged.');
     }
   }
 
@@ -545,16 +661,22 @@ export default function App() {
       if (mergeState.fileName.startsWith('Checking')) return 'Checking the exported document…';
       if (tool === 'pdf-to-images') return `Rendering ${mergeState.completedFiles} of ${mergeState.totalFiles} PNG pages…`;
       if (tool === 'images-to-pdf') return `Placing ${mergeState.pagesDone} of ${mergeState.totalFiles} images…`;
+      if (tool === 'compress') return 'Compressing PDF losslessly on this device…';
+      if (tool === 'protect') return 'Applying AES-256 protection on this device…';
+      if (tool === 'unlock') return 'Unlocking PDF on this device…';
       if (tool !== 'merge') return `Processing ${pageCounts[activeSourceId ?? -1] ?? 0} pages…`;
       return mergeState.completedFiles === 0
         ? 'Reading the first PDF…'
         : `Added ${mergeState.completedFiles} of ${mergeState.totalFiles} PDFs · ${mergeState.pagesDone} pages so far`;
     }
-    if (mergeState.kind === 'done') return tool === 'pdf-to-images'
-      ? `${outputImages.length} PNG ${outputImages.length === 1 ? 'image' : 'images'} · ${formatBytes(mergeState.fileSize)} · ready to download`
-      : outputPdfs.length > 1
-        ? `${outputPdfs.length} PDFs · ${mergeState.pageCount} pages · ready to download`
-        : `${mergeState.pageCount} ${mergeState.pageCount === 1 ? 'page' : 'pages'} · ${formatBytes(mergeState.fileSize)} · ready to download`;
+    if (mergeState.kind === 'done') {
+      if (['compress', 'protect', 'unlock'].includes(tool) && notice) return notice;
+      return tool === 'pdf-to-images'
+        ? `${outputImages.length} PNG ${outputImages.length === 1 ? 'image' : 'images'} · ${formatBytes(mergeState.fileSize)} · ready to download`
+        : outputPdfs.length > 1
+          ? `${outputPdfs.length} PDFs · ${mergeState.pageCount} pages · ready to download`
+          : `${mergeState.pageCount} ${mergeState.pageCount === 1 ? 'page' : 'pages'} · ${formatBytes(mergeState.fileSize)} · ready to download`;
+    }
     if (notice) return notice;
     if (tool === 'merge') return currentSources.length < 2 ? 'Add at least two PDFs to merge.' : `${currentSources.length} PDFs in order · processing stays on this device.`;
     if (tool === 'images-to-pdf') return imageSources.length ? `${imageSources.length} images in order · processing stays on this device.` : 'Add PNG or JPEG images to make a PDF.';
@@ -564,7 +686,7 @@ export default function App() {
   const hasOutputs = outputPdfs.length > 0 || outputImages.length > 0;
   const outputEntries = tool === 'pdf-to-images'
     ? outputImages.map((output) => ({ file: output.file, url: output.url, detail: `Source page ${output.pageNumber}` }))
-    : outputPdfs.map((output) => ({ file: output.file, url: output.url, detail: `${output.pageCount} pages` }));
+    : outputPdfs.map((output) => ({ file: output.file, url: output.url, detail: `${output.pageCount} pages${output.locked ? ' · password protected' : ''}` }));
   const selectedName = showOutput ? outputEntries[activeOutputIndex]?.file.name : activeSource?.file.name;
   const pageCount = activeSource ? pageCounts[activeSource.id] ?? 0 : 0;
   const pageFieldLabel = tool === 'split' ? 'Split after pages'
@@ -731,7 +853,7 @@ export default function App() {
                 </div>
               </>
             )}
-            {!['merge', 'images-to-pdf', 'page-numbers'].includes(tool) && (
+            {!['merge', 'images-to-pdf', 'page-numbers', 'compress', 'protect', 'unlock'].includes(tool) && (
               <div className="operation-controls" aria-labelledby="operation-settings-title">
                 <p className="eyebrow" id="operation-settings-title">{tool === 'watermark' || tool === 'annotate' || tool === 'signature' ? 'PAGE AND CONTENT SETTINGS' : 'PAGE SETTINGS'}</p>
                 <label htmlFor="page-list">{tool === 'pdf-to-images' ? 'Pages to render' : pageFieldLabel}</label>
@@ -772,6 +894,30 @@ export default function App() {
                 </>}
               </div>
             )}
+            {tool === 'compress' && (
+              <div className="operation-controls" aria-labelledby="operation-settings-title">
+                <p className="eyebrow" id="operation-settings-title">COMPRESSION SETTINGS</p>
+                <p className="field-hint">Lossless stream and resource optimization only. Images are not resampled. Files are limited to {formatBytes(PDFCPU_MAX_INPUT_BYTES)}; no download is offered unless the result is smaller.</p>
+              </div>
+            )}
+            {tool === 'protect' && (
+              <div className="operation-controls" aria-labelledby="operation-settings-title">
+                <p className="eyebrow" id="operation-settings-title">PASSWORD SETTINGS</p>
+                <label htmlFor="protect-password">Open password</label>
+                <input id="protect-password" type="password" autoComplete="new-password" value={protectPassword} disabled={mergeState.kind === 'running'} aria-describedby="protect-password-hint" onChange={(event) => { setProtectPassword(event.currentTarget.value); setError(null); }} />
+                <label htmlFor="confirm-protect-password">Confirm open password</label>
+                <input id="confirm-protect-password" type="password" autoComplete="new-password" value={confirmProtectPassword} disabled={mergeState.kind === 'running'} onChange={(event) => { setConfirmProtectPassword(event.currentTarget.value); setError(null); }} />
+                <p className="field-hint" id="protect-password-hint">Use 8–127 UTF-8 bytes. A separate random owner password is discarded after processing. Folioyard cannot recover your open password.</p>
+              </div>
+            )}
+            {tool === 'unlock' && (
+              <div className="operation-controls" aria-labelledby="operation-settings-title">
+                <p className="eyebrow" id="operation-settings-title">UNLOCK SETTINGS</p>
+                <label htmlFor="unlock-password">PDF password</label>
+                <input id="unlock-password" type="password" autoComplete="current-password" value={unlockPassword} disabled={mergeState.kind === 'running'} aria-describedby="unlock-password-hint" onChange={(event) => { setUnlockPassword(event.currentTarget.value); setError(null); }} />
+                <p className="field-hint" id="unlock-password-hint">The password is used on this device and cleared after processing.</p>
+              </div>
+            )}
             {tool === 'page-numbers' && activeSource && <p className="field-hint page-number-note">Page numbers will be added to every page in this PDF.</p>}
             {currentSources.length > 0 && (
               <aside className="fidelity-note" aria-label="PDF processing compatibility">
@@ -780,7 +926,13 @@ export default function App() {
                   ? 'PNG pages are raster images. Text, links, and vector content will no longer be selectable.'
                   : tool === 'images-to-pdf'
                     ? 'Each image is placed on its own Letter page with a small margin. Original image metadata is not carried over.'
-                    : 'Forms become static pages. Bookmarks, attachments, and document details are not carried over. Digital signatures will no longer be valid.'}</p>
+                    : tool === 'compress'
+                      ? 'Compression is lossless. Embedded images are not resized or re-encoded, so some PDFs will not get smaller.'
+                      : tool === 'protect'
+                        ? 'AES-256 protects opening the file. Save the password somewhere safe; it is never sent to a server.'
+                        : tool === 'unlock'
+                          ? 'Unlocking creates an unprotected copy. Keep the downloaded file private like the original.'
+                          : 'Forms become static pages. Bookmarks, attachments, and document details are not carried over. Digital signatures will no longer be valid.'}</p>
               </aside>
             )}
           </section>
@@ -789,13 +941,13 @@ export default function App() {
             <div className="preview-heading">
               <div className="preview-heading-main">
                 <p className="eyebrow">02 <span aria-hidden="true">/</span> PREVIEW</p>
-                <h2 id="preview-title">{showOutput ? tool === 'pdf-to-images' ? 'PNG output' : tool === 'merge' ? 'Merged output' : tool === 'split' && outputPdfs.length > 1 ? 'Split output' : 'Processed output' : 'Document preview'}</h2>
+                <h2 id="preview-title">{showOutput ? tool === 'pdf-to-images' ? 'PNG output' : tool === 'merge' ? 'Merged output' : tool === 'split' && outputPdfs.length > 1 ? 'Split output' : selectedOutput?.locked ? 'Protected output' : 'Processed output' : 'Document preview'}</h2>
                 <p className="preview-filename" title={selectedName ?? undefined}>{selectedName ?? 'No document selected'}</p>
               </div>
               {hasOutputs && (
                 <div className="preview-tabs">
                   <button type="button" aria-pressed={!showOutput} onClick={() => { setShowOutput(false); setPageNumber(1); }}>Source</button>
-                  <button type="button" aria-pressed={showOutput} onClick={() => { setShowOutput(true); setPageNumber(1); }}>{tool === 'pdf-to-images' ? 'PNG images' : tool === 'merge' ? 'Merged PDF' : 'Processed output'}</button>
+                  <button type="button" aria-pressed={showOutput} onClick={() => { setShowOutput(true); setPageNumber(1); }}>{tool === 'pdf-to-images' ? 'PNG images' : tool === 'merge' ? 'Merged PDF' : selectedOutput?.locked ? 'Protected PDF' : 'Processed output'}</button>
                 </div>
               )}
               {showOutput && tool !== 'pdf-to-images' && outputEntries.length > 1 && (
@@ -831,6 +983,14 @@ export default function App() {
               <div className="preview-stage"><img className="rendered-image" src={outputImages[activeOutputIndex].url} alt={`PNG render of source page ${outputImages[activeOutputIndex].pageNumber}`} /></div>
             ) : !showOutput && tool === 'images-to-pdf' && activeSource?.url ? (
               <div className="preview-stage"><img className="rendered-image" src={activeSource.url} alt={activeSource.file.name} /></div>
+            ) : showOutput && selectedOutput?.locked ? (
+              <div className="preview-stage">
+                <div className="preview-empty-state">
+                  <span className="empty-page-mark" aria-hidden="true"><i /><i /><i /></span>
+                  <p>Password-protected PDF</p>
+                  <span>Download it and open it with the password you set. Folioyard does not keep the password.</span>
+                </div>
+              </div>
             ) : previewFile ? (
               <Suspense fallback={<div className="preview-stage"><output className="preview-message">Loading PDF renderer…</output></div>}>
                 <PdfPreview file={previewFile} pageNumber={pageNumber} onPageCount={updatePageCount} onThumbnail={updateThumbnail} />
@@ -880,6 +1040,12 @@ export default function App() {
             <button className="button button-primary primary-action" type="button" onClick={startImagesToPdf} disabled={!imageSources.length}>Create PDF</button>
           ) : tool === 'pdf-to-images' ? (
             <button className="button button-primary primary-action" type="button" onClick={() => void startPdfToImages()} disabled={!activeSource || !pageCount}>Render PNGs</button>
+          ) : tool === 'compress' ? (
+            <button className="button button-primary primary-action" type="button" onClick={() => runPdfCpu('compress')} disabled={!activeSource || !pageCount || activeSource.file.size > PDFCPU_MAX_INPUT_BYTES}>Compress PDF</button>
+          ) : tool === 'protect' ? (
+            <button className="button button-primary primary-action" type="button" onClick={() => runPdfCpu('encrypt')} disabled={!activeSource || !pageCount || activeSource.file.size > PDFCPU_MAX_INPUT_BYTES}>Protect PDF</button>
+          ) : tool === 'unlock' ? (
+            <button className="button button-primary primary-action" type="button" onClick={() => runPdfCpu('decrypt')} disabled={!activeSource || activeSource.file.size > PDFCPU_MAX_INPUT_BYTES}>Unlock PDF</button>
           ) : (
             <button className="button button-primary primary-action" type="button" onClick={startPageOperation} disabled={!activeSource || !pageCount}>
               {tool === 'split' ? 'Split PDF' : tool === 'extract' ? 'Extract pages' : tool === 'reorder' ? 'Save page order' : tool === 'rotate' ? 'Rotate pages' : tool === 'delete' ? 'Delete pages' : tool === 'watermark' ? 'Add watermark' : tool === 'page-numbers' ? 'Add page numbers' : tool === 'annotate' ? 'Add note' : 'Add visual signature'}

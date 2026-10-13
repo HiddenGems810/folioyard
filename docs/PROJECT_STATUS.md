@@ -1,23 +1,27 @@
 # Folioyard project status
 
 **Updated:** 2026-10-13
-**Readiness:** Review-ready for the twelve implemented tools; compression and password controls remain outside this verified slice.
+**Readiness:** Review-ready locally for all fifteen tools; the latest CI state is on [PR #1](https://github.com/HiddenGems810/folioyard/pull/1).
 
 ## Phase status
 
-- **Phase 0 — Integrity:** Complete. The repo is on `codex/folioyard-recovery`; the existing `origin/main` history was preserved. GitHub access was verified.
-- **Phase 1 — REA:** Complete for this active Codex session. Codex's native REA registry exposes 170 tools; an actual native REA call returned server identity and capabilities. The scoped setup dry-run required no configuration changes.
-- **Phase 2 — Audit:** Complete for the covered PDF structures. Synthetic malformed, encrypted, annotated, filled-form, metadata, outline, attachment, and signed fixtures were inspected. The app states the resulting fidelity limits.
-- **Phase 3 — Workbench:** Complete for the current tool set. The document-first shell, twelve tool controls, previews, thumbnails, settings, errors, and responsive navigation are implemented. Chromium checks passed at seven CSS widths without horizontal overflow.
-- **Phase 4 — Toolkit:** Foundation and everyday tools complete: Merge, Split, Extract, Reorder, Rotate, Delete, Images to PDF, PDF to images, Watermark, Page numbers, Add a note, and Visual signature. Meaningful compression, password controls, and advanced editing remain unimplemented pending a reliable client-side approach.
-- **Phase 5 — Engineering:** Typecheck, lint, 16 unit tests, production build, dependency vulnerability audits, and the PR verify workflow pass. Physical dependency licenses and production notices are documented. Full assistive-technology, cross-browser, large-file, and upload-time network verification remain incomplete.
-- **Phase 6 — GitHub:** The implementation is pushed to `codex/folioyard-recovery`, and [PR #1](https://github.com/HiddenGems810/folioyard/pull/1) is open. The latest PR verify workflow passed.
+- **Phase 0 — Integrity:** Complete. Work remains on `codex/folioyard-recovery`; the existing `origin/main` history was preserved.
+- **Phase 1 — REA:** The native REA JavaScript application analyzer inspected the production build and recovered its asset/module inventory. Semantic graph coverage was partial because several large bundles exceeded analyzer heap/result limits; browser behavior was verified separately.
+- **Phase 2 — Audit:** Complete for the covered PDF structures. Synthetic malformed, encrypted, annotated, filled-form, metadata, outline, attachment, signed, and uncompressed-stream fixtures cover known fidelity and failure boundaries.
+- **Phase 3 — Workbench:** Complete for fifteen tools. The document-first shell, file queue, previews, thumbnails, settings, status/errors, and responsive navigation are implemented. Chromium width checks show no horizontal page overflow from 320 to 1728 CSS pixels.
+- **Phase 4 — Toolkit:** Complete for Merge, Split, Extract, Reorder, Rotate, Delete, Images to PDF, PDF to images, Watermark, Page numbers, Add a note, Visual signature, Compress, Protect, and Unlock. Compression and AES-256 password operations run in a lazy-loaded, same-origin pdfcpu WebAssembly worker.
+- **Phase 5 — Engineering:** Local lint, typecheck, TypeScript tests, Go tests, module verification, vulnerability scan, WASM build, and production build pass with pdfcpu v0.16.2. Dependency notices include the shipped pdfcpu graph and Go WebAssembly runtime. Cross-browser, assistive-technology, physical-device, and large-file stress checks remain outstanding.
+- **Phase 6 — GitHub:** [PR #1](https://github.com/HiddenGems810/folioyard/pull/1) is the review target for `codex/folioyard-recovery`. GitHub Actions validates the Go tests and WASM build together with the npm checks and production build; deployment and public release remain out of scope.
 
-## Baseline and current checks
+## Current checks
 
-Baseline before changes: typecheck passed, tests passed 6/6, and the production build passed. At the current revision, `npm run lint`, `npm run typecheck`, `npm test` (16/16), `npm run build`, `npm audit`, and `npm audit --omit=dev` pass.
+- `npm run lint`, `npm run typecheck`, and `npm test` passed (16/16 TypeScript tests).
+- `go test -count=1 ./...` and `go mod verify` passed for the pinned pdfcpu operation package and module graph.
+- `npm run build:pdfcpu` and `npm run build` passed. The pdfcpu v0.16.2 WASM is 20,805,255 bytes and the Go runtime is 16,992 bytes; both are loaded lazily from the same origin.
+- `govulncheck` found no vulnerabilities in called symbols or packages; it reported GO-2026-5932 for `golang.org/x/crypto/openpgp` as a module-only issue with no call path from Folioyard.
+- Chromium browser checks on the rebuilt runtime exercised lossless compression, the no-reduction path, AESV3 output, password mismatch, wrong-password rejection, successful unlock, and text/page validation. The updated seven-width layout check showed no horizontal overflow.
+- The source and generated outputs remain local; the browser request ledger showed same-origin static assets only during file operations.
 
-The remote `main` commit was verified as the existing initial project commit; no history was rewritten. Deployment and public release are not part of this work.
+Deployment and public release are not part of this work.
 
 See [architecture](ARCHITECTURE.md), [QA evidence](QA_EVIDENCE.md), and [known limitations](KNOWN_LIMITATIONS.md).
-\n

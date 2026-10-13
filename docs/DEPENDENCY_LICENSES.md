@@ -4,7 +4,22 @@ Inventory date: 2026-10-13. The table covers 56 packages physically installed in
 
 Packages are separated by npm lockfile runtime/development classification. Uninstalled platform-specific optional packages are not listed; they remain in the lockfile but are not installed in this checkout. Re-run the inventory when dependencies change. License metadata is an inventory aid, not legal advice.
 
-The public web bundle keeps upstream license files for the runtime PDF.js, pdf-lib, React, and their production dependency trees in [`public/THIRD_PARTY_NOTICES.txt`](../public/THIRD_PARTY_NOTICES.txt). PDF.js ships several bundled data and font notices there as well. Build/test/lint packages are development-only and do not ship in the browser bundle.
+The public web bundle keeps upstream license files for the runtime PDF.js, pdf-lib, React, their production dependency trees, the pdfcpu WebAssembly dependency graph, and Go's `wasm_exec.js` runtime in [`public/THIRD_PARTY_NOTICES.txt`](../public/THIRD_PARTY_NOTICES.txt). PDF.js ships several bundled data and font notices there as well. Build/test/lint packages are development-only and do not ship in the browser bundle.
+
+The browser WASM build uses Go 1.27.2 and pdfcpu v0.16.2. This inventory lists the non-standard modules linked by the `js/wasm` dependency graph; module versions and checksums are pinned in `tools/pdfcpu-wasm/go.mod` and `go.sum`. The full upstream notices are included in `public/THIRD_PARTY_NOTICES.txt`.
+
+| Scope | Module | Version | Declared license |
+|---|---|---:|---|
+| WASM runtime | `github.com/pdfcpu/pdfcpu` | 0.16.2 | Apache-2.0 |
+| WASM dependency | `github.com/clipperhouse/uax29/v2` | 2.7.0 | MIT |
+| WASM dependency | `github.com/hhrutter/tiff` | 1.0.7 | BSD-3-Clause |
+| WASM dependency | `github.com/mattn/go-runewidth` | 0.0.30 | MIT |
+| WASM dependency | `github.com/xdg-go/stringprep` | 1.0.4 | Apache-2.0 |
+| WASM dependency | `go.yaml.in/yaml/v3` | 3.0.5 | MIT AND Apache-2.0 |
+| WASM dependency | `golang.org/x/crypto` | 0.57.0 | BSD-3-Clause |
+| WASM dependency | `golang.org/x/image` | 0.46.0 | BSD-3-Clause |
+| WASM dependency | `golang.org/x/text` | 0.42.0 | BSD-3-Clause |
+| WASM runtime | Go `wasm_exec.js` | 1.27.2 | BSD-3-Clause |
 
 | Scope | Package | Version | Declared license |
 |---|---|---:|---|
