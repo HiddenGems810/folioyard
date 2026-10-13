@@ -1,5 +1,7 @@
 # Folioyard Merge MVP verification
 
+> Historical MVP report. Its implementation and REA statements describe the 2026-10-12 snapshot; the current six-tool foundation and checks are maintained in [the project status](../docs/PROJECT_STATUS.md) and [QA evidence](../docs/QA_EVIDENCE.md).
+
 **Run date:** 2026-10-12  
 **Readiness:** Review-ready for the first local merge slice. This is not a production deployment.
 
@@ -28,3 +30,15 @@ The browser app imports local PDFs, previews source pages, reorders whole source
 ## REA readiness
 
 REA package 6.4.0 passed `mcp doctor` with the production stdio adapter healthy, protocol 2025-11-25, all 170 tools and 6 prompts available, matching digest, and no missing, unexpected, or duplicate tools. A direct MCP session listed tools and successfully called `capture_browser_scenario`. The current Codex session itself did not expose REA in its live tool registry; restart/reload Codex MCP registration before relying on REA as a native tool in this session. Competitor captures and evidence hashes are documented in [the research report](../research/REA_READINESS_AND_COMPETITOR_RECON.md).
+
+The Git and native-registry statements above describe the 2026-10-12 verification environment and have since been superseded. Current repository and REA evidence is recorded below.
+
+## Reverification — 2026-10-13
+
+- Repository: `D:\Project Files\folioyard` is a Git repository on `codex/folioyard-recovery`, based on local and remote `main` commit `943759d3ce6dccc7f668f093a145912f1040e444`. The remote contains that same `main` commit. GitHub read/write authentication is present; no write was attempted.
+- `npm run typecheck` — passed.
+- `npm test` — passed, 1 test file and 6 tests.
+- `npm run build` — passed.
+- Codex CLI 0.139.0 lists the `rea` server as enabled. The active tool registry exposes 170 `mcp__rea__*` tools, and a direct native `binary_session` invocation returned REA 6.4.0 server identity and capability evidence. No binary target is open in that session.
+- The configured REA command uses Codex's Node 24.19 runtime. The system `npx` uses Node 24.5, below REA's documented minimum. Running REA diagnostics with that system Node reported a stale registration and no setup plan; running the scoped dry-run with the configured Codex runtime reported the Codex registration aligned and zero planned/applied actions. No config repair or restart was needed.
+- REA's Codex registration and tool catalog are healthy. Its broader environment report remains partial because optional Ghidra and IDA analysis engines are not configured; this does not prevent target-free or browser-provider REA tools from being available.
