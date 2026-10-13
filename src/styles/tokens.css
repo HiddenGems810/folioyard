@@ -1,0 +1,38 @@
+:root {
+  --fy-font-sans: "Instrument Sans", "Segoe UI", Arial, sans-serif;
+  --fy-font-mono: "IBM Plex Mono", Consolas, monospace;
+  --fy-space-1: 4px;
+  --fy-space-2: 8px;
+  --fy-space-3: 12px;
+  --fy-space-4: 16px;
+  --fy-space-5: 20px;
+  --fy-space-6: 24px;
+  --fy-space-8: 32px;
+  --fy-radius-xs: 4px;
+  --fy-radius-sm: 8px;
+  --fy-type-xs: 12px;
+  --fy-type-sm: 13px;
+  --fy-type-body-sm: 14px;
+  --fy-type-body: 16px;
+  --fy-type-title-sm: 24px;
+  --fy-type-title: 32px;
+  --fy-color-canvas: #F7F7F2;
+  --fy-color-surface: #FFFFFF;
+  --fy-color-surface-subtle: #F0F2EC;
+  --fy-color-surface-tint: #E9EFE8;
+  --fy-color-text: #1C302C;
+  --fy-color-text-muted: #64736E;
+  --fy-color-border: #D8DED6;
+  --fy-color-border-strong: #64736E;
+  --fy-color-action: #1C302C;
+  --fy-color-action-text: #FFFFFF;
+  --fy-color-action-hover: #284D43;
+  --fy-color-accent: #E66F4E;
+  --fy-color-accent-text: #9B402A;
+  --fy-color-focus: #B44F37;
+  --fy-color-success: #207353;
+  --fy-color-warning: #855819;
+  --fy-color-danger: #B63830;
+  --fy-color-disabled-bg: #E8ECE5;
+  --fy-color-disabled-text: #64736E;
+}

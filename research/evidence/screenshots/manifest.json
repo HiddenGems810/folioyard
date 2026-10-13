@@ -1,0 +1,52 @@
+[
+  {
+    "site": "smallpdf-com",
+    "url": "https://smallpdf.com/merge-pdf",
+    "reaEvidenceId": "ev_0e46ec4c039ce1c20bc3c3d89be02d3f9ab2e86840c3a898f67a952b82cd9785",
+    "image": "research\\evidence\\screenshots\\smallpdf-com-merge-entry.png",
+    "sha256": "a45b816c6a2c56532682e2bb95ad27991c65a2b389a00620392ad54a39bb1ed1",
+    "bytes": 98703,
+    "status": "completed",
+    "capturedAt": "2026-10-12"
+  },
+  {
+    "site": "adobe-com",
+    "url": "https://www.adobe.com/acrobat/online/merge-pdf.html",
+    "reaEvidenceId": "ev_2b28bf87640b8409fa82de58fbd38556a756ad6b996eb2cf1f30b5ff8e602afa",
+    "image": "research\\evidence\\screenshots\\adobe-com-merge-entry.png",
+    "sha256": "b1383afda19a590a518a93911f5bb20a96ee8e90e5d65cc1197c4150cf0dd5e1",
+    "bytes": 19848,
+    "status": "completed",
+    "capturedAt": "2026-10-12"
+  },
+  {
+    "site": "tools-pdf24-org",
+    "url": "https://tools.pdf24.org/en/merge-pdf",
+    "reaEvidenceId": "ev_8903fd0124108cd2943f06406d6799c9e4c048a5938702e8ea1da3b7d0cb73bf",
+    "image": "research\\evidence\\screenshots\\tools-pdf24-org-merge-entry.png",
+    "sha256": "97f4c3def64c70d04cf4aaa443130adf2d0394a51e7c998d2cdbacf168ec89ce",
+    "bytes": 159561,
+    "status": "completed",
+    "capturedAt": "2026-10-12"
+  },
+  {
+    "site": "ilovepdf-com",
+    "url": "https://www.ilovepdf.com/merge_pdf",
+    "reaEvidenceId": "ev_978c30d7b20911a65aad06deaacf9a871f859af788951dc09cf7b4da9d0efd87",
+    "image": "research\\evidence\\screenshots\\ilovepdf-com-merge-entry.png",
+    "sha256": "a93a73976a2633c7ed6c1f29aa51f66d7d242d3effaaa0d81f79cdd9c6d71214",
+    "bytes": 43285,
+    "status": "completed",
+    "capturedAt": "2026-10-12"
+  },
+  {
+    "site": "pdfgear-com",
+    "url": "https://www.pdfgear.com/merge-pdf/",
+    "reaEvidenceId": "ev_fe3019066f0628f9e28a42099e25ee6f2979f3dc1efb0f6965b10dd6027baa05",
+    "image": "research\\evidence\\screenshots\\pdfgear-com-merge-entry.png",
+    "sha256": "7f14650f0aec10ea31af7515bef9bdd20a73e41e43274b26a52a31a977d049f7",
+    "bytes": 74501,
+    "status": "completed",
+    "capturedAt": "2026-10-12"
+  }
+]

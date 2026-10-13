@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env*
+!.env.example
+*.local
+output/*.pdf
+output/playwright/desktop-merge/
+research/evidence/REA_COMPETITOR_ENTRY_PAGES.json
+research/evidence/REA_PDFGEAR_MERGE.json
+research/evidence/screenshots/.playwright-cli/
