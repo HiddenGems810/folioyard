@@ -11,7 +11,7 @@
 - **Phase 3 — Workbench:** Complete for the current tool set. The document-first shell, twelve tool controls, previews, thumbnails, settings, errors, and responsive navigation are implemented. Chromium checks passed at seven CSS widths without horizontal overflow.
 - **Phase 4 — Toolkit:** Foundation and everyday tools complete: Merge, Split, Extract, Reorder, Rotate, Delete, Images to PDF, PDF to images, Watermark, Page numbers, Add a note, and Visual signature. Meaningful compression, password controls, and advanced editing remain unimplemented pending a reliable client-side approach.
 - **Phase 5 — Engineering:** Typecheck, lint, 16 unit tests, production build, and dependency vulnerability audits pass. Physical dependency licenses and production notices are documented. Full assistive-technology, cross-browser, large-file, and upload-time network verification remain incomplete; GitHub CI is pending.
-- **Phase 6 — GitHub:** Repository access and feature branch are verified. Final review, commit, push, and PR creation are pending.
+- **Phase 6 — GitHub:** Commit `40f8f27` is on `codex/folioyard-recovery`, and [PR #1](https://github.com/HiddenGems810/folioyard/pull/1) is open. GitHub checks are running on the PR branch.
 
 ## Baseline and current checks
 
