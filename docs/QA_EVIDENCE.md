@@ -48,6 +48,8 @@
 - Compression reduced the 240,551-byte synthetic uncompressed-stream PDF to 1.6 KB (99% reported reduction); PDF.js rendered its repeated text from the output. The small feature-rich fixture exercised the no-reduction path and produced no download.
 - Chromium's network ledger during upload, protect, unlock, and compression contained same-origin GET requests only, including the lazy-loaded `pdfcpu-wasm-exec.js` and `pdfcpu.wasm`; no document or password POST was observed.
 - The native REA analyzer statically inspected `dist/` and enumerated the PDFCPU worker/runtime modules. Its semantic graph was partial because several large bundles exceeded analyzer heap/result budgets; no runtime conclusions were inferred from that scan.
+- Current Codex REA integration is enabled: the managed Node 24.19.0 doctor reports the Codex registration healthy, scoped setup dry-run plans no changes, and a native `binary_session` call returned REA 6.4.0 identity with 170 tools and six prompts. The system `npx` uses Node 24.5.0, below REA's supported minimum; its doctor result is not representative of the configured Codex runtime.
+- Edge 122.0.2365.106 rendered the application shell but failed to open the compression fixture. PDF.js logged `Promise.try is not a function`, fell back to its fake worker, and left the preview unresolved with processing disabled. This old Edge build is not current-browser compatibility evidence; the PDF.js modern build targets current browsers.
 - After rebuilding with pdfcpu v0.16.2, Chromium rechecked the changed password and compression flows: mismatched confirmation left the source intact; AESV3 protection output contained no raw copy of the fixture's page-text canary and both password fields were cleared; a wrong unlock password preserved both source files; the correct password produced a validated two-page unprotected PDF whose original page text rendered and whose download reopened with pdf-lib without an `/Encrypt` marker.
 - The rebuilt compression flow reduced the 240,551-byte synthetic fixture to 1,591 bytes (99%); the downloaded result reopened with pdf-lib as a one-page PDF. The feature-rich fixture exercised the no-reduction path and showed no download button.
 - The seven viewport widths (320, 390, 430, 768, 1200, 1440, and 1728 CSS pixels) were rechecked after the rebuild; `documentElement.scrollWidth` equaled `clientWidth` at each width.
@@ -55,8 +57,8 @@
 
 ## Remaining verification
 
-- Cross-browser verification has not been completed; the runtime walkthrough used Chromium through Playwright CLI, and Edge was unavailable in this environment.
+- Cross-engine verification has not been completed. Chromium workflows were exercised through Playwright CLI. Edge 122 was available but is too old for the PDF.js modern build; current Edge was not tested. The Playwright Firefox 156 binary downloaded, but Windows refused to launch it because of a side-by-side configuration error.
 - Full keyboard/focus review, screen-reader pass, and WCAG conformance audit have not been completed.
 - Full browser/production-hosting network behavior was not tested; the local request ledger confirms no off-origin request in the exercised flows.
-- GitHub Actions status for the current revision is tracked on PR #1; local checks do not establish the CI result.
+- This checkout does not have Go on PATH, so Go tests and the WASM rebuild were not rerun locally in this turn. GitHub Actions for the exact PR #1 head passed and runs both with Go 1.27.2.
 - No large-file stress test, browser performance benchmark, or production deployment validation was run.

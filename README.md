@@ -11,6 +11,8 @@ npm ci
 npm run dev
 ```
 
+Use a current stable browser. Folioyard uses PDF.js's modern build, which targets current browser engines; older versions may fail to open PDF previews. See [PDF.js browser support](https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-support).
+
 The committed WebAssembly assets are used by the compression and password tools. To rebuild them from source, install Go 1.27.2 and run `npm run build:pdfcpu`.
 
 ## Checks
