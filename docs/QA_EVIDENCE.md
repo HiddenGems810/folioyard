@@ -8,7 +8,7 @@
 - Current foundation and everyday tools: `npm run lint` passed; `npm run typecheck` passed; `npm test` passed (16/16); `npm run build` passed with Vite 8.3.4.
 - `npm audit` and `npm audit --omit=dev` reported no known vulnerabilities at the time of the check.
 - A physical-package license inventory is in `docs/DEPENDENCY_LICENSES.md`; production notices are in `public/THIRD_PARTY_NOTICES.txt`.
-- The GitHub Actions workflow runs lint, typecheck, tests, and build. It has not run on GitHub yet.
+- The GitHub Actions workflow runs lint, typecheck, tests, and build. The verify job passed on PR #1.
 - The built main application bundle is 251.48 kB (77.90 kB gzip); PDF.js and its workers remain separate assets. No browser performance benchmark or large-file stress test was run.
 
 ## REA MCP

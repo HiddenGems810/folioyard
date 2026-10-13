@@ -10,8 +10,8 @@
 - **Phase 2 — Audit:** Complete for the covered PDF structures. Synthetic malformed, encrypted, annotated, filled-form, metadata, outline, attachment, and signed fixtures were inspected. The app states the resulting fidelity limits.
 - **Phase 3 — Workbench:** Complete for the current tool set. The document-first shell, twelve tool controls, previews, thumbnails, settings, errors, and responsive navigation are implemented. Chromium checks passed at seven CSS widths without horizontal overflow.
 - **Phase 4 — Toolkit:** Foundation and everyday tools complete: Merge, Split, Extract, Reorder, Rotate, Delete, Images to PDF, PDF to images, Watermark, Page numbers, Add a note, and Visual signature. Meaningful compression, password controls, and advanced editing remain unimplemented pending a reliable client-side approach.
-- **Phase 5 — Engineering:** Typecheck, lint, 16 unit tests, production build, and dependency vulnerability audits pass. Physical dependency licenses and production notices are documented. Full assistive-technology, cross-browser, large-file, and upload-time network verification remain incomplete; GitHub CI is pending.
-- **Phase 6 — GitHub:** Commit `40f8f27` is on `codex/folioyard-recovery`, and [PR #1](https://github.com/HiddenGems810/folioyard/pull/1) is open. GitHub checks are running on the PR branch.
+- **Phase 5 — Engineering:** Typecheck, lint, 16 unit tests, production build, dependency vulnerability audits, and the PR verify workflow pass. Physical dependency licenses and production notices are documented. Full assistive-technology, cross-browser, large-file, and upload-time network verification remain incomplete.
+- **Phase 6 — GitHub:** The implementation is pushed to `codex/folioyard-recovery`, and [PR #1](https://github.com/HiddenGems810/folioyard/pull/1) is open. The latest PR verify workflow passed.
 
 ## Baseline and current checks
 
