@@ -32,6 +32,10 @@ export default function SignaturePad({ onChange }: Props) {
   function finish() {
     if (!drawing.current) return;
     drawing.current = false;
+    if (!hasInk) {
+      onChange(null);
+      return;
+    }
     canvas.current?.toBlob(onChange, 'image/png');
   }
 

@@ -19,6 +19,6 @@ The available tools are Merge PDFs, Split PDFs, Extract pages, Reorder pages, Ro
 ## Runtime and verification
 
 - Documents and outputs exist in tab memory only; refreshing or closing the tab clears them.
-- PDF.js uses its modern build and expects a current browser. Edge 122.0.2365.106 rendered the app shell but failed to open a PDF because `Promise.try` is unavailable, leaving the preview unresolved and document actions disabled. Use a current stable browser; support for older versions is not promised. See [PDF.js browser support](https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-support).
+- PDF.js uses its modern build and expects a current browser. If `Promise.try` is unavailable, Folioyard now shows an update-browser message and leaves the source available. Edge 122.0.2365.106 was observed before that guard was added; it is not a supported-browser test. Use a current stable browser. See [PDF.js browser support](https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-support).
 - Cross-engine, full screen-reader, physical-device, and complete WCAG 2.2 AA testing remain outstanding. Chromium checks do not establish those results.
 - Cross-browser, physical-device, large-file, and production-hosting behavior have not been verified. No deployment has been prepared or published.

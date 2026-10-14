@@ -10,6 +10,7 @@
 - `govulncheck` found no vulnerabilities in called symbols or imported packages. It reported GO-2026-5932 for the `golang.org/x/crypto/openpgp` module; the analyzer found no call path from Folioyard to that package.
 - A physical-package license inventory is in `docs/DEPENDENCY_LICENSES.md`; production notices are in `public/THIRD_PARTY_NOTICES.txt`.
 - The GitHub Actions workflow runs Go tests and WASM build, lint, typecheck, TypeScript tests, and production build. Earlier PR verification applied to the pre-v0.16.2 revision.
+- CI now installs Playwright Chromium, Firefox, and WebKit and runs `npm run test:e2e` after the production build.
 - The built main application bundle is 258.10 kB (79.41 kB gzip). The pdfcpu v0.16.2 WASM is 20,805,255 bytes and Go runtime is 16,992 bytes; both are separate lazy-loaded same-origin assets. No browser performance benchmark or large-file stress test was run.
 
 ## REA MCP
@@ -49,7 +50,7 @@
 - Chromium's network ledger during upload, protect, unlock, and compression contained same-origin GET requests only, including the lazy-loaded `pdfcpu-wasm-exec.js` and `pdfcpu.wasm`; no document or password POST was observed.
 - The native REA analyzer statically inspected `dist/` and enumerated the PDFCPU worker/runtime modules. Its semantic graph was partial because several large bundles exceeded analyzer heap/result budgets; no runtime conclusions were inferred from that scan.
 - Current Codex REA integration is enabled: the managed Node 24.19.0 doctor reports the Codex registration healthy, scoped setup dry-run plans no changes, and a native `binary_session` call returned REA 6.4.0 identity with 170 tools and six prompts. The system `npx` uses Node 24.5.0, below REA's supported minimum; its doctor result is not representative of the configured Codex runtime.
-- Edge 122.0.2365.106 rendered the application shell but failed to open the compression fixture. PDF.js logged `Promise.try is not a function`, fell back to its fake worker, and left the preview unresolved with processing disabled. This old Edge build is not current-browser compatibility evidence; the PDF.js modern build targets current browsers.
+- Edge 122.0.2365.106 previously failed to open a PDF because `Promise.try` was unavailable. `PdfPreview` now detects that browser capability and shows an update-browser message while preserving the source. This old Edge build is not current-browser compatibility evidence; the PDF.js modern build targets current browsers.
 - After rebuilding with pdfcpu v0.16.2, Chromium rechecked the changed password and compression flows: mismatched confirmation left the source intact; AESV3 protection output contained no raw copy of the fixture's page-text canary and both password fields were cleared; a wrong unlock password preserved both source files; the correct password produced a validated two-page unprotected PDF whose original page text rendered and whose download reopened with pdf-lib without an `/Encrypt` marker.
 - The rebuilt compression flow reduced the 240,551-byte synthetic fixture to 1,591 bytes (99%); the downloaded result reopened with pdf-lib as a one-page PDF. The feature-rich fixture exercised the no-reduction path and showed no download button.
 - The seven viewport widths (320, 390, 430, 768, 1200, 1440, and 1728 CSS pixels) were rechecked after the rebuild; `documentElement.scrollWidth` equaled `clientWidth` at each width.
@@ -57,7 +58,8 @@
 
 ## Remaining verification
 
-- Cross-engine verification has not been completed. Chromium workflows were exercised through Playwright CLI. Edge 122 was available but is too old for the PDF.js modern build; current Edge was not tested. The Playwright Firefox 156 binary downloaded, but Windows refused to launch it because of a side-by-side configuration error.
+- The committed Playwright suite passed four Chromium workflows (merge, signature validation and export, unsupported-browser messaging, and PDF preview) and two WebKit checks (unsupported-browser messaging and PDF preview). Firefox could not launch in this Windows environment (`spawn UNKNOWN`); CI installs and runs Firefox on Linux. Current Microsoft Edge was not tested.
+- The blank-signature regression confirms an empty pointer tap remains empty and is rejected; a real mouse stroke is accepted and produces a downloadable PDF.
 - Full keyboard/focus review, screen-reader pass, and WCAG conformance audit have not been completed.
 - Full browser/production-hosting network behavior was not tested; the local request ledger confirms no off-origin request in the exercised flows.
 - This checkout does not have Go on PATH, so Go tests and the WASM rebuild were not rerun locally in this turn. GitHub Actions for the exact PR #1 head passed and runs both with Go 1.27.2.

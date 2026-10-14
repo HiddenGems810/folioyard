@@ -47,9 +47,12 @@ export default function PdfPreview({ file, pageNumber, onPageCount, onThumbnail 
     if (!file) {
       return;
     }
-
     void (async () => {
       try {
+        if (typeof Reflect.get(Promise, 'try') !== 'function') {
+          setDocumentResult({ file, pdf: null, error: 'Update your browser to preview PDFs.' });
+          return;
+        }
         const bytes = new Uint8Array(await file.arrayBuffer());
         if (cancelled) return;
         loadingTask = getDocument({ data: bytes });
