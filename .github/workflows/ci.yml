@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.2'
+          cache-dependency-path: tools/pdfcpu-wasm/go.sum
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: go test ./...
+        working-directory: tools/pdfcpu-wasm
+      - run: npm run build:pdfcpu
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:e2e
+        id: e2e
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.e2e.outcome == 'failure'
+        with:
+          name: playwright-failure-artifacts
+          path: test-results/e2e/
+          if-no-files-found: ignore

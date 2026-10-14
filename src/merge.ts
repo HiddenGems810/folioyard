@@ -1,4 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
+import { flattenFormFields } from './pdf-structure';
 
 export type MergeInput = { name: string; readBytes: () => Promise<Uint8Array> };
 export type MergeProgress = { name: string; completedFiles: number; pageCount: number };
@@ -23,6 +24,8 @@ export async function mergePdfFiles(
       }
       throw new Error(`Could not read “${file.name}”. It may be damaged or not a valid PDF.`, { cause: error });
     }
+
+    flattenFormFields(source, file.name);
 
     const indices = source.getPageIndices();
     if (indices.length === 0) throw new Error(`“${file.name}” has no pages to merge.`);

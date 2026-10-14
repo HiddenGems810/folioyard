@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, PDFName, degrees } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { mergePdfFiles } from '../src/merge';
 
@@ -92,5 +92,46 @@ describe('mergePdfFiles', () => {
       source('locked.pdf', encrypted),
       source('valid.pdf', valid),
     ])).rejects.toThrow(/encrypted|password/i);
+  });
+
+  it('flattens form fields and documents which PDF structures do not survive page copying', async () => {
+    const featureRich = new Uint8Array(await readFile(new URL('./fixtures/feature-rich.pdf', import.meta.url)));
+    const ordinary = await makePdf([{ width: 420, height: 600 }]);
+    const input = await PDFDocument.load(featureRich);
+    const inputPage = input.getPages()[0];
+    expect(input.getTitle()).toBe('Feature fixture title');
+    expect(input.getForm().getFields().map((field) => field.getName())).toEqual(['client.name']);
+    expect(input.catalog.has(PDFName.of('Names'))).toBe(true);
+    expect(input.catalog.has(PDFName.of('Outlines'))).toBe(true);
+    expect(inputPage.node.Annots()?.size()).toBe(2);
+
+    const merged = await mergePdfFiles([
+      source('feature-rich.pdf', featureRich),
+      source('ordinary.pdf', ordinary),
+    ]);
+    const output = await PDFDocument.load(merged.bytes);
+
+    expect(output.getPageCount()).toBe(3);
+    expect(output.getTitle()).toBeUndefined();
+    expect(output.catalog.has(PDFName.of('Names'))).toBe(false);
+    expect(output.catalog.has(PDFName.of('Outlines'))).toBe(false);
+    expect(output.getPages()[0].node.Annots()?.size()).toBe(1);
+    expect(output.getForm().getFields()).toHaveLength(0);
+  });
+
+  it('removes the signed form field so the rewritten output cannot appear digitally signed', async () => {
+    const signed = new Uint8Array(await readFile(new URL('./fixtures/signed-feature-rich.pdf', import.meta.url)));
+    const ordinary = await makePdf([{ width: 420, height: 600 }]);
+    const input = await PDFDocument.load(signed);
+    expect(input.getForm().getFields().map((field) => field.constructor.name)).toContain('PDFSignature');
+
+    const merged = await mergePdfFiles([
+      source('signed-feature-rich.pdf', signed),
+      source('ordinary.pdf', ordinary),
+    ]);
+    const output = await PDFDocument.load(merged.bytes);
+
+    expect(output.getForm().getFields()).toHaveLength(0);
+    expect(output.getPages()[0].node.Annots()?.size()).toBe(1);
   });
 });

@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "preview": "vite preview",
     "build": "tsc --noEmit && vite build",
+    "build:pdfcpu": "node tools/pdfcpu-wasm/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "lint": "oxlint src tests vite.config.ts playwright.config.ts"
   },
   "dependencies": {
     "pdf-lib": "1.17.1",
@@ -16,10 +20,12 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@types/node": "^24.0.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "oxlint": "^1.88.0",
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vitest": "5.0.4"
