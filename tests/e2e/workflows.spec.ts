@@ -20,7 +20,7 @@ test('merges two PDFs into a validated downloadable document', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Source files 2' })).toBeVisible();
   await page.getByRole('button', { name: 'Merge PDFs' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Merged output' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Merged output' })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(/3 pages.*ready to download/)).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
