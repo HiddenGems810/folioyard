@@ -61,15 +61,16 @@ function ToolLink({ info, onNavigate }: { info: ToolInfo; onNavigate: (href: str
 }
 
 export function HomePage({ onNavigate, onChooseFiles }: { onNavigate: (href: string) => void; onChooseFiles: (files: File[]) => void }) {
+  const rotateTool = tools.find((item) => item.id === 'rotate');
+
   return (
     <div className="site-page">
       <SiteHeader onNavigate={onNavigate} />
       <main>
         <section className="home-hero">
           <div className="home-hero-copy">
-            <p className="eyebrow">FOLIOYARD <span aria-hidden="true">/</span> PDF WORKBENCH</p>
-            <h1>Get your PDF in order.<br /><span>Then get on with it.</span></h1>
-            <p className="home-lede">Merge the stack, fix the page that came in sideways, or add a note or signature. Folioyard handles the fiddly part in this tab.</p>
+            <h1>That PDF is being<br /><span>difficult again.</span></h1>
+            <p className="home-lede">Turn one stubborn page upright, merge the pile, or add the signature it’s been waiting on. The work stays right here in your browser.</p>
             <div className="home-actions">
               <label className="button button-primary home-file-button">
                 Choose a PDF
@@ -82,20 +83,35 @@ export function HomePage({ onNavigate, onChooseFiles }: { onNavigate: (href: str
             </div>
             <p className="home-privacy-line"><span className="privacy-dot" />No upload step. No account. No daily limit.</p>
           </div>
-          <aside className="home-hero-aside" aria-label="Common PDF problems Folioyard can fix">
-            <p className="eyebrow">YOU KNOW THE PDF</p>
-            <ul>
-              <li>The page that came in sideways.</li>
-              <li>The stack that should be one file.</li>
-              <li>The signature line. Still blank.</li>
-            </ul>
-            <p className="home-hero-aside-note">There’s a tool for each. Fifteen, actually.</p>
+          <aside className="home-hero-aside" aria-label="A common PDF repair: rotate one page from sideways to upright">
+            <p className="eyebrow">ONE PAGE, WRONG WAY UP</p>
+            <div className="page-fix-demo" aria-hidden="true">
+              <div className="page-fix-step">
+                <span className="page-fix-label">BEFORE</span>
+                <div className="page-fix-frame">
+                  <div className="page-fix-sheet page-fix-sheet--sideways">
+                    <span>04</span><i /><i /><i />
+                  </div>
+                </div>
+              </div>
+              <span className="page-fix-arrow">→</span>
+              <div className="page-fix-step">
+                <span className="page-fix-label">AFTER</span>
+                <div className="page-fix-frame">
+                  <div className="page-fix-sheet">
+                    <span>04</span><i /><i /><i />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="page-fix-caption">Turn this page. Leave the rest alone.</p>
+            {rotateTool && <RouteLink href={toolPath(rotateTool)} onNavigate={onNavigate} className="home-fix-link">Rotate pages <span aria-hidden="true">↗</span></RouteLink>}
           </aside>
         </section>
 
         <section className="home-featured" aria-labelledby="popular-tools-title">
           <div className="section-heading-row">
-            <div><p className="eyebrow">FOUR QUICK FIXES</p><h2 id="popular-tools-title">When PDFs get fussy.</h2></div>
+            <div><p className="eyebrow">GOOD PLACES TO START</p><h2 id="popular-tools-title">Most days, it’s one of these.</h2></div>
             <a href="#all-tools">Browse all 15 tools <span aria-hidden="true">↘</span></a>
           </div>
           <div className="featured-tools">

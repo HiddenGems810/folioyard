@@ -1,6 +1,6 @@
 # Folioyard project status
 
-**Updated:** 2026-10-13
+**Updated:** 2026-10-14
 **Readiness:** Review-ready locally for the current implementation; public release remains unverified.
 
 ## Product state
@@ -8,7 +8,7 @@
 - Fifteen browser-based PDF tools share a document queue, preview, validated output, and one local processing boundary.
 - The homepage and individual tool routes explain the product and guide users into the matching workspace. Privacy and compatibility pages disclose processing and format limits.
 - A checked PDF output can be handed into another single-document PDF tool in the same tab. Existing input files remain available in the source list.
-- The homepage now uses a more specific editorial voice and a dot-removed logo lockup. The selected original logo asset remains preserved; the versioned raster derivative is the active review candidate.
+- The homepage now uses direct, lightly dry copy and a before/after page-rotation illustration. The selected original logo asset remains preserved; the dot-removed raster derivative is still a review candidate.
 
 ## Engineering and evidence
 

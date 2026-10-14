@@ -90,7 +90,7 @@ test('previews a real PDF in every supported browser engine @cross-browser', asy
 
 test('homepage links to each useful tool page with unique metadata and working workspace', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Get your PDF in order\. Then get on with it/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /That PDF is being difficult again/ })).toBeVisible();
   const logo = page.locator('.site-header .brand-lockup img');
   await expect(logo).toHaveAttribute('src', '/folioyard-logo-v2.png');
   await expect.poll(() => logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
