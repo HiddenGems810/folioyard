@@ -11,7 +11,7 @@
 - A physical-package license inventory is in `docs/DEPENDENCY_LICENSES.md`; production notices are in `public/THIRD_PARTY_NOTICES.txt`.
 - The GitHub Actions workflow runs Go tests and WASM build, lint, typecheck, TypeScript tests, and production build. Earlier PR verification applied to the pre-v0.16.2 revision.
 - CI now installs Playwright Chromium, Firefox, and WebKit and runs `npm run test:e2e` after the production build.
-- The built main application bundle is 258.10 kB (79.41 kB gzip). The pdfcpu v0.16.2 WASM is 20,805,255 bytes and Go runtime is 16,992 bytes; both are separate lazy-loaded same-origin assets. No browser performance benchmark or large-file stress test was run.
+- The latest built main application bundle is 289.25 kB (87.69 kB gzip). The pdfcpu v0.16.2 WASM is 20,805,255 bytes and Go runtime is 16,992 bytes; both are separate lazy-loaded same-origin assets. No browser performance benchmark or large-file stress test was run.
 
 ## REA MCP
 
@@ -37,7 +37,7 @@
 - Downloaded merged bytes were reopened with pdf-lib and confirmed to contain four pages. Split outputs and extracted, reordered, rotated, and deleted outputs were also checked for expected page counts or order.
 - Invalid and encrypted PDFs showed distinct recovery messages while keeping the input list intact. Long source filenames clipped within the narrow layout and retained the full name in their title.
 - Keyboard activation of the Move Up control and Undo were checked. This is a focused keyboard check, not a complete assistive-technology audit.
-- The saved 390×844 and 1440×960 screenshots show the earlier empty-state shell and predate the twelve-tool expansion; they are retained as shell references, not current full-interface proof.
+- Current full-page homepage screenshots at 390×844 and 1440×1000 are saved in `output/playwright/folioyard-home-mobile-390.png` and `output/playwright/folioyard-home-desktop-1440.png`. They show the current editorial homepage; the Playwright viewport test separately checks horizontal overflow at seven widths.
 - A clean reload rendered the current application without new React errors. Historical dev-console entries from the earlier hot reload remain in the console history.
 - The expanded fifteen-tool interface passed the seven-width no-horizontal-overflow check at CSS widths 320, 390, 430, 768, 1200, 1440, and 1728 pixels.
 - Images to PDF converted a local PNG fixture. The downloaded PDF reopened as a one-page Letter document with one embedded image object.
@@ -49,7 +49,10 @@
 - Compression reduced the 240,551-byte synthetic uncompressed-stream PDF to 1.6 KB (99% reported reduction); PDF.js rendered its repeated text from the output. The small feature-rich fixture exercised the no-reduction path and produced no download.
 - Chromium's network ledger during upload, protect, unlock, and compression contained same-origin GET requests only, including the lazy-loaded `pdfcpu-wasm-exec.js` and `pdfcpu.wasm`; no document or password POST was observed.
 - The native REA analyzer statically inspected `dist/` and enumerated the PDFCPU worker/runtime modules. Its semantic graph was partial because several large bundles exceeded analyzer heap/result budgets; no runtime conclusions were inferred from that scan.
-- Current Codex REA integration is enabled: the managed Node 24.19.0 doctor reports the Codex registration healthy, scoped setup dry-run plans no changes, and a native `binary_session` call returned REA 6.4.0 identity with 170 tools and six prompts. The system `npx` uses Node 24.5.0, below REA's supported minimum; its doctor result is not representative of the configured Codex runtime.
+- Current Codex REA integration is enabled: the managed Node 24.19.0 doctor reports the Codex registration healthy, scoped setup dry-run plans no changes, and a native `binary_session` call returned REA 6.4.0 identity with 170 tools and six prompts.
+- The latest homepage includes a versioned dot-removed logo review derivative; the original selected logo remains intact. Playwright confirms the candidate image loads in the browser and the page has no horizontal overflow from 320 to 1728 CSS pixels. The derivative is a generated raster review candidate, not an editable brand master.
+- A build with the reserved test origin `https://folioyard.example` emitted 18 sitemap URLs, 18 matching route canonicals, and a robots sitemap entry. The subsequent clean build contained no synthetic hostname or sitemap. This validates generation only; the real public origin is still unconfigured.
+- Generated PDF output can continue to Add a note in the same tab; the second download was reopened and validated as a three-page PDF. This handoff intentionally excludes Merge and image conversion as follow-on tools; see known limitations. The system `npx` uses Node 24.5.0, below REA's supported minimum; its doctor result is not representative of the configured Codex runtime.
 - Edge 122.0.2365.106 previously failed to open a PDF because `Promise.try` was unavailable. `PdfPreview` now detects that browser capability and shows an update-browser message while preserving the source. This old Edge build is not current-browser compatibility evidence; the PDF.js modern build targets current browsers.
 - After rebuilding with pdfcpu v0.16.2, Chromium rechecked the changed password and compression flows: mismatched confirmation left the source intact; AESV3 protection output contained no raw copy of the fixture's page-text canary and both password fields were cleared; a wrong unlock password preserved both source files; the correct password produced a validated two-page unprotected PDF whose original page text rendered and whose download reopened with pdf-lib without an `/Encrypt` marker.
 - The rebuilt compression flow reduced the 240,551-byte synthetic fixture to 1,591 bytes (99%); the downloaded result reopened with pdf-lib as a one-page PDF. The feature-rich fixture exercised the no-reduction path and showed no download button.
@@ -58,9 +61,9 @@
 
 ## Remaining verification
 
-- The committed Playwright suite passed four Chromium workflows (merge, signature validation and export, unsupported-browser messaging, and PDF preview) and two WebKit checks (unsupported-browser messaging and PDF preview). Firefox could not launch in this Windows environment (`spawn UNKNOWN`); CI installs and runs Firefox on Linux. Current Microsoft Edge was not tested.
+- The current Playwright suite contains 22 Chromium workflows, including all 15 public tool routes, the homepage logo and responsive checks, output handoff, and PDF byte/page validation. WebKit coverage is limited to tests tagged `@cross-browser`. Firefox could not launch in this Windows environment (`spawn UNKNOWN`); CI installs and runs Firefox on Linux. Current Microsoft Edge was not tested.
 - The blank-signature regression confirms an empty pointer tap remains empty and is rejected; a real mouse stroke is accepted and produces a downloadable PDF.
 - Full keyboard/focus review, screen-reader pass, and WCAG conformance audit have not been completed.
 - Full browser/production-hosting network behavior was not tested; the local request ledger confirms no off-origin request in the exercised flows.
-- This checkout does not have Go on PATH, so Go tests and the WASM rebuild were not rerun locally in this turn. GitHub Actions for the exact PR #1 head passed and runs both with Go 1.27.2.
+- This checkout does not have Go on PATH, so Go tests and the WASM rebuild were not rerun in this UI milestone. The GitHub Actions workflow runs them with Go 1.27.2.
 - No large-file stress test, browser performance benchmark, or production deployment validation was run.

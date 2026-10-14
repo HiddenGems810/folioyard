@@ -6,11 +6,14 @@ import type { PageOperation } from './page-operations';
 import { PDFCPU_MAX_INPUT_BYTES, type PdfCpuOperation, type PdfCpuResponse } from './pdfcpu-protocol';
 import { parsePageList } from './page-list';
 import SignaturePad from './SignaturePad';
+import { tools, toolById, toolByPath, toolPath, type Tool } from './tool-catalog';
+import ToolIcon from './ToolIcon';
+import BrandLockup from './BrandLockup';
+import { HomePage, NotFoundPage, PolicyPage, ToolDetails } from './SitePages';
 
 const PdfPreview = lazy(() => import('./PdfPreview'));
 
 type Source = { id: number; file: File; url?: string };
-type Tool = 'merge' | 'split' | 'extract' | 'reorder' | 'rotate' | 'delete' | 'images-to-pdf' | 'pdf-to-images' | 'watermark' | 'page-numbers' | 'annotate' | 'signature' | 'compress' | 'protect' | 'unlock';
 type OutputPdf = { file: File; url: string; pageCount: number; locked: boolean };
 type OutputImage = { file: File; url: string; pageNumber: number };
 type MergeState =
@@ -18,41 +21,9 @@ type MergeState =
   | { kind: 'running'; completedFiles: number; totalFiles: number; fileName: string; pagesDone: number }
   | { kind: 'done'; pageCount: number; fileSize: number };
 
-const tools: Array<{ id: Tool; title: string; mark: string }> = [
-  { id: 'merge', title: 'Merge PDF', mark: 'M' },
-  { id: 'split', title: 'Split PDF', mark: 'S' },
-  { id: 'extract', title: 'Extract pages', mark: 'E' },
-  { id: 'reorder', title: 'Reorder pages', mark: 'R' },
-  { id: 'rotate', title: 'Rotate pages', mark: '↻' },
-  { id: 'delete', title: 'Delete pages', mark: '−' },
-  { id: 'images-to-pdf', title: 'Images to PDF', mark: 'I' },
-  { id: 'pdf-to-images', title: 'PDF to images', mark: 'P' },
-  { id: 'watermark', title: 'Watermark', mark: 'W' },
-  { id: 'page-numbers', title: 'Page numbers', mark: '#' },
-  { id: 'annotate', title: 'Add a note', mark: 'N' },
-  { id: 'signature', title: 'Visual signature', mark: '✎' },
-  { id: 'compress', title: 'Compress PDF', mark: '↓' },
-  { id: 'protect', title: 'Protect PDF', mark: '◇' },
-  { id: 'unlock', title: 'Unlock PDF', mark: '↗' },
-];
-
-const descriptions: Record<Tool, string> = {
-  merge: 'Put documents in order, check the pages, then save one PDF.',
-  split: 'Choose break points to save separate PDFs from one document.',
-  extract: 'Keep selected pages in a new PDF and leave your source unchanged.',
-  reorder: 'Set a new order for every page in the selected PDF.',
-  rotate: 'Turn selected pages clockwise and keep the rest as they are.',
-  delete: 'Remove selected pages from a copy of your PDF.',
-  'images-to-pdf': 'Place PNG and JPEG images into a clean, ordered PDF.',
-  'pdf-to-images': 'Render selected PDF pages as downloadable PNG images.',
-  watermark: 'Add a light, diagonal text watermark to selected pages.',
-  'page-numbers': 'Add a centered page number to every page.',
-  annotate: 'Add a short, visible note to selected pages.',
-  signature: 'Place a drawn or typed visual signature on selected pages.',
-  compress: 'Reduce file size losslessly. A download is offered only when the PDF becomes smaller.',
-  protect: 'Encrypt a PDF with an AES-256 open password that stays on this device.',
-  unlock: 'Create an unprotected copy of a PDF using its open password.',
-};
+function cleanPath(path: string) {
+  return path.replace(/\/+$/, '') || '/';
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -67,13 +38,14 @@ function formatBytes(bytes: number) {
 }
 
 export default function App() {
+  const [routePath, setRoutePath] = useState(() => cleanPath(window.location.pathname));
   const [sources, setSources] = useState<Source[]>([]);
   const [imageSources, setImageSources] = useState<Source[]>([]);
   const [undoSources, setUndoSources] = useState<Source[] | null>(null);
   const [activeSourceId, setActiveSourceId] = useState<number | null>(null);
   const [pageCounts, setPageCounts] = useState<Record<number, number>>({});
   const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
-  const [tool, setTool] = useState<Tool>('merge');
+  const [tool, setTool] = useState<Tool>(() => toolByPath(window.location.pathname)?.id ?? 'merge');
   const [pageList, setPageList] = useState('1');
   const [watermarkText, setWatermarkText] = useState('DRAFT');
   const [annotationText, setAnnotationText] = useState('');
@@ -88,6 +60,7 @@ export default function App() {
   const [outputPdfs, setOutputPdfs] = useState<OutputPdf[]>([]);
   const [outputImages, setOutputImages] = useState<OutputImage[]>([]);
   const [activeOutputIndex, setActiveOutputIndex] = useState(0);
+  const [handoffTool, setHandoffTool] = useState<Tool | ''>('');
   const [mergeState, setMergeState] = useState<MergeState>({ kind: 'idle' });
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -151,10 +124,10 @@ export default function App() {
       : { ...current, [activeSourceId]: dataUrl });
   }, [activeSourceId, showOutput]);
 
-  function addFiles(fileList: FileList | File[]) {
+  function addFiles(fileList: FileList | File[], targetTool: Tool = tool) {
     if (mergeState.kind === 'running') return;
     const offered = Array.from(fileList);
-    const images = tool === 'images-to-pdf';
+    const images = targetTool === 'images-to-pdf';
     const supported = offered.filter((file) => images
       ? file.type === 'image/png' || file.type === 'image/jpeg' || /\.(png|jpe?g)$/i.test(file.name)
       : file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
@@ -198,12 +171,12 @@ export default function App() {
     setNotice(null);
   }
 
-  function selectTool(nextTool: Tool) {
+  const selectTool = useCallback((nextTool: Tool, updateRoute = true, preferredSource?: Source) => {
     if (mergeState.kind === 'running' || nextTool === tool) return;
     clearOutput();
     setTool(nextTool);
     const nextSources = nextTool === 'images-to-pdf' ? imageSources : sources;
-    const nextSource = nextSources[0] ?? null;
+    const nextSource = preferredSource ?? nextSources.find((source) => source.id === activeSourceId) ?? nextSources[0] ?? null;
     setActiveSourceId(nextSource?.id ?? null);
     setPageList(nextTool === 'reorder' && nextSource ? (pageCounts[nextSource.id] ? Array.from({ length: pageCounts[nextSource.id] }, (_, index) => index + 1).join(', ') : '') : '1');
     setPageNumber(1);
@@ -211,6 +184,83 @@ export default function App() {
     setSignatureBlob(null);
     setError(null);
     setNotice(null);
+    if (updateRoute) {
+      const path = toolPath(nextTool);
+      window.history.pushState({}, '', path);
+      setRoutePath(cleanPath(path));
+    }
+  }, [activeSourceId, clearOutput, imageSources, mergeState.kind, pageCounts, sources, tool]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const path = cleanPath(window.location.pathname);
+      const nextTool = toolByPath(path);
+      if (mergeState.kind === 'running' && nextTool && nextTool.id !== tool) {
+        window.history.pushState({}, '', toolPath(tool));
+        return;
+      }
+      if (nextTool && nextTool.id !== tool) selectTool(nextTool.id, false);
+      setRoutePath(path);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [mergeState.kind, selectTool, tool]);
+
+  useEffect(() => {
+    const info = toolByPath(routePath);
+    const privacy = routePath === '/privacy';
+    const compatibility = routePath === '/compatibility';
+    const pageTitle = info?.pageTitle ?? (privacy ? 'Privacy and local file processing | Folioyard'
+      : compatibility ? 'Browser compatibility | Folioyard'
+        : routePath === '/' ? 'Folioyard — PDF workbench'
+          : 'Page not found | Folioyard');
+    const description = info?.metaDescription ?? (privacy
+      ? 'Learn how Folioyard processes documents locally in your browser and what happens to selected files.'
+      : compatibility
+        ? 'Supported browsers, device requirements, and known PDF processing limits for Folioyard.'
+        : 'Merge the stack, fix the page that came in sideways, or add a note. Your files stay in this browser tab.');
+    document.title = pageTitle;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (meta) meta.content = description;
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = pageTitle;
+    const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = description;
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.append(canonical);
+    }
+    canonical.href = `${window.location.origin}${routePath === '/' ? '/' : `${routePath}/`}`;
+  }, [routePath]);
+
+  function navigate(href: string) {
+    const target = new URL(href, window.location.href);
+    const path = cleanPath(target.pathname);
+    const nextTool = toolByPath(path);
+    if (mergeState.kind === 'running' && nextTool && nextTool.id !== tool) return;
+    if (nextTool && nextTool.id !== tool) selectTool(nextTool.id, false);
+    const displayPath = nextTool ? toolPath(nextTool) : path === '/' ? '/' : `${path}/`;
+    window.history.pushState({}, '', `${displayPath}${target.hash}`);
+    setRoutePath(path);
+    if (target.hash) requestAnimationFrame(() => document.getElementById(target.hash.slice(1))?.scrollIntoView());
+    else window.scrollTo(0, 0);
+  }
+
+  function startFromHome(files: File[]) {
+    if (!files.length) return;
+    navigate(toolPath('merge'));
+    addFiles(files, 'merge');
+  }
+
+  function continueWithOutput() {
+    if (!selectedOutput || !handoffTool || mergeState.kind === 'running') return;
+    const source: Source = { id: nextId.current++, file: selectedOutput.file };
+    setSources((current) => [...current, source]);
+    setPageCounts((current) => ({ ...current, [source.id]: selectedOutput.pageCount }));
+    setHandoffTool('');
+    selectTool(handoffTool, true, source);
   }
 
   function moveSource(id: number, direction: -1 | 1) {
@@ -687,6 +737,8 @@ export default function App() {
   const outputEntries = tool === 'pdf-to-images'
     ? outputImages.map((output) => ({ file: output.file, url: output.url, detail: `Source page ${output.pageNumber}` }))
     : outputPdfs.map((output) => ({ file: output.file, url: output.url, detail: `${output.pageCount} pages${output.locked ? ' · password protected' : ''}` }));
+  // shortcut: hand off PDFs to single-document tools; include merge after its source queue can distinguish carried output from originals.
+  const handoffTools = tools.filter(({ id }) => id !== tool && id !== 'merge' && id !== 'images-to-pdf' && id !== 'pdf-to-images' && (!selectedOutput?.locked || id === 'unlock'));
   const selectedName = showOutput ? outputEntries[activeOutputIndex]?.file.name : activeSource?.file.name;
   const pageCount = activeSource ? pageCounts[activeSource.id] ?? 0 : 0;
   const pageFieldLabel = tool === 'split' ? 'Split after pages'
@@ -696,13 +748,19 @@ export default function App() {
     : tool === 'reorder' ? `List every page from 1 to ${pageCount}, once each.`
       : `Use page numbers or ranges, such as 1, 3-5. This PDF has ${pageCount} pages.`;
 
+  const activeTool = toolById(tool);
+  if (routePath === '/') return <HomePage onNavigate={navigate} onChooseFiles={startFromHome} />;
+  if (routePath === '/privacy') return <PolicyPage page="privacy" onNavigate={navigate} />;
+  if (routePath === '/compatibility') return <PolicyPage page="compatibility" onNavigate={navigate} />;
+  if (!toolByPath(routePath)) return <NotFoundPage onNavigate={navigate} />;
+
   return (
     <div className="app-frame">
       <header className="topbar">
         <a className="skip-link" href="#merge-workspace">Skip to document workspace</a>
         <div className="topbar-inner">
-          <a className="brand-lockup" href="/" aria-label="Folioyard home">
-            <img src="/folioyard-logo.png" alt="" width="150" height="38" />
+          <a className="brand-lockup" href="/" aria-label="Folioyard home" onClick={(event) => { event.preventDefault(); navigate('/'); }}>
+            <BrandLockup />
           </a>
           <span className="topbar-divider" aria-hidden="true" />
           <span className="topbar-label">PDF workspace</span>
@@ -713,9 +771,9 @@ export default function App() {
       <main className="app-shell">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">PDF TOOL <span aria-hidden="true">/</span> {tools.find((item) => item.id === tool)?.title.toUpperCase()}</p>
-            <h1>{tools.find((item) => item.id === tool)?.title}</h1>
-            <p className="page-intro">{descriptions[tool]}</p>
+            <p className="eyebrow">PDF TOOL <span aria-hidden="true">/</span> {activeTool.title.toUpperCase()}</p>
+            <h1>{activeTool.title}</h1>
+            <p className="page-intro">{activeTool.description}</p>
           </div>
           <p className="session-note">No account. No upload.</p>
         </div>
@@ -726,10 +784,14 @@ export default function App() {
             <ul className="tool-list">
               {tools.map((item) => (
                 <li key={item.id}>
-                  <button className="tool-link" type="button" aria-pressed={tool === item.id} disabled={mergeState.kind === 'running'} onClick={() => selectTool(item.id)}>
-                    <span className="tool-link-mark" aria-hidden="true">{item.mark}</span>
+                  <a className="tool-link" href={toolPath(item)} aria-current={tool === item.id ? 'page' : undefined} aria-disabled={mergeState.kind === 'running' && tool !== item.id} onClick={(event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    navigate(toolPath(item));
+                  }}>
+                    <span className="tool-link-icon"><ToolIcon tool={item.id} /></span>
                     <span>{item.title}</span>
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -1006,6 +1068,17 @@ export default function App() {
                 </div>
               </div>
             )}
+            {showOutput && selectedOutput && handoffTools.length > 0 && (
+              <div className="output-handoff">
+                <label htmlFor="handoff-tool">One more thing?
+                  <select id="handoff-tool" value={handoffTool} onChange={(event) => setHandoffTool(tools.find((item) => item.id === event.currentTarget.value)?.id ?? '')}>
+                    <option value="">Choose a PDF tool</option>
+                    {handoffTools.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+                  </select>
+                </label>
+                <button className="button button-secondary" type="button" disabled={!handoffTool} onClick={continueWithOutput}>Use this PDF</button>
+              </div>
+            )}
             {showOutput && outputEntries.length > 1 && (
               <details className="output-downloads">
                 <summary>Download output files ({outputEntries.length})</summary>
@@ -1022,6 +1095,7 @@ export default function App() {
           </section>
         </div>
         </div>
+        <ToolDetails info={activeTool} onNavigate={navigate} />
       </main>
 
       <footer className="action-bar">

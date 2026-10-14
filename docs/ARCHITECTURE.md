@@ -10,6 +10,8 @@
 - PDF-to-PNG uses PDF.js to render selected pages sequentially into one reusable browser canvas. Encoding and output URLs stay local to the tab; rendering itself runs on the main thread.
 - `src/page-list.ts` parses and bounds page lists. `src/pdf-structure.ts` removes broken widget references left by `pdf-lib` after form flattening.
 - PDF.js reopens each completed output before Folioyard creates download URLs. The source queue stays available after failures; new operations and source changes revoke prior output URLs.
+- `src/tool-catalog.ts` owns tool names, slugs, page copy, and metadata. `src/SitePages.tsx` renders the homepage, tool information, and policy pages; `vite.config.ts` emits static fallback HTML for those routes.
+- A selected validated PDF output can be carried into a compatible single-document tool. The app retains earlier sources in the queue, selects the carried `File`, revokes the old output URL, and keeps the bytes in tab memory.
 
 ## Data boundary
 
