@@ -342,7 +342,7 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.03em; line
 @media (max-width: 560px) {
   .topbar { height: 58px; flex-basis: 58px; }
   .topbar-inner, .app-shell, .action-bar-inner { width: calc(100% - 32px); }
-  .wordmark { font-size: 19px; }
+  .brand-lockup { width: 116px; }
   .topbar-divider { margin: 0 10px; }
   .topbar-label { font-size: 12px; }
   .privacy-note { gap: 6px; font-size: 10px; }
