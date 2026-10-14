@@ -56,13 +56,8 @@ button:focus-visible, a:focus-visible {
   margin: 0 auto;
 }
 
-.wordmark {
-  color: var(--fy-color-text);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.055em;
-  text-decoration: none;
-}
+.brand-lockup { display: inline-flex; width: 150px; align-items: center; flex: 0 0 auto; }
+.brand-lockup img { display: block; width: 100%; height: auto; }
 
 .topbar-divider { width: 1px; height: 22px; margin: 0 16px; background: var(--fy-color-border); }
 .topbar-label { color: var(--fy-color-text-muted); font-size: var(--fy-type-body-sm); }

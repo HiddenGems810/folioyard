@@ -701,7 +701,9 @@ export default function App() {
       <header className="topbar">
         <a className="skip-link" href="#merge-workspace">Skip to document workspace</a>
         <div className="topbar-inner">
-          <span className="wordmark">folioyard</span>
+          <a className="brand-lockup" href="/" aria-label="Folioyard home">
+            <img src="/folioyard-logo.png" alt="" width="150" height="38" />
+          </a>
           <span className="topbar-divider" aria-hidden="true" />
           <span className="topbar-label">PDF workspace</span>
           <p className="privacy-note"><span className="privacy-dot" aria-hidden="true" />Files stay in this browser</p>

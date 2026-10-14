@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "preview": "vite preview",
     "build": "tsc --noEmit && vite build",
     "build:pdfcpu": "node tools/pdfcpu-wasm/build.mjs",
     "typecheck": "tsc --noEmit",
